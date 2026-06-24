@@ -6,7 +6,6 @@
 <title>POMS – Escala de Humor</title>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 :root {
@@ -35,90 +34,59 @@ header p { font-size: 0.78rem; color: var(--sage); margin-top: 4px; }
 .opcoes input[type="radio"] { display: none; }
 .opcoes .bolinha { width: 30px; height: 30px; border-radius: 50%; border: 1.5px solid var(--borda); background: var(--creme); display: flex; align-items: center; justify-content: center; font-size: 0.75rem; color: var(--texto-suave); transition: all 0.15s; }
 .opcoes input[type="radio"]:checked + .bolinha { background: var(--verde); color: var(--creme); border-color: var(--verde); font-weight: 500; }
-.btn-calcular { display: block; width: calc(100% - 2rem); margin: 1.5rem 1rem; padding: 1rem; background: var(--verde); color: var(--creme); border: none; border-radius: var(--radius); font-size: 0.95rem; font-weight: 500; letter-spacing: 0.04em; cursor: pointer; transition: opacity 0.2s; }
-.btn-calcular:hover { opacity: 0.88; }
-.btn-calcular:disabled { opacity: 0.5; cursor: not-allowed; }
-#resultado { display: none; padding: 0 1rem 2rem; }
-.resultado-header { background: var(--verde); color: var(--creme); padding: 1rem 1.25rem; border-radius: var(--radius) var(--radius) 0 0; margin-top: 1rem; }
-.resultado-header h2 { font-size: 1rem; font-weight: 500; }
-.resultado-header p { font-size: 0.78rem; color: var(--sage); margin-top: 2px; }
-.resultado-corpo { background: white; border-radius: 0 0 var(--radius) var(--radius); padding: 1.25rem; border: 0.5px solid var(--borda); }
-.dimensoes-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 1.25rem; }
-.dim-card { background: var(--creme); border-radius: 8px; padding: 0.65rem 0.875rem; border-left: 3px solid var(--sage); }
-.dim-card.vigor { border-left-color: var(--verde); }
-.dim-card.alerta { border-left-color: var(--dourado); }
-.dim-card-nome { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--texto-suave); }
-.dim-card-valor { font-size: 1.4rem; font-weight: 500; color: var(--verde); margin-top: 2px; }
-.dim-card-max { font-size: 0.65rem; color: var(--texto-suave); }
-.chart-wrapper { position: relative; height: 260px; width: 100%; margin: 1rem 0; }
-.interpretacao { background: var(--creme-escuro); border-radius: 8px; padding: 0.875rem 1rem; margin-top: 0.5rem; }
-.interpretacao-titulo { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--sage); margin-bottom: 6px; }
-.interpretacao p { font-size: 0.82rem; color: var(--texto-suave); line-height: 1.6; }
-.dmt-valor { text-align: center; padding: 0.875rem; margin-top: 1rem; background: var(--verde); border-radius: 8px; color: var(--creme); }
-.dmt-label { font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--sage); }
-.dmt-numero { font-size: 2rem; font-weight: 500; margin-top: 2px; }
-.dmt-desc { font-size: 0.75rem; color: var(--sage); margin-top: 2px; }
+.btn-enviar { display: block; width: calc(100% - 2rem); margin: 1.5rem 1rem; padding: 1rem; background: var(--verde); color: var(--creme); border: none; border-radius: var(--radius); font-size: 0.95rem; font-weight: 500; letter-spacing: 0.04em; cursor: pointer; transition: opacity 0.2s; }
+.btn-enviar:hover { opacity: 0.88; }
+.btn-enviar:disabled { opacity: 0.5; cursor: not-allowed; }
 .aviso { display: none; background: #fff3cd; border: 1px solid #d4a017; color: #7a5c00; border-radius: 8px; padding: 0.75rem 1rem; font-size: 0.82rem; margin: 0 1rem 1rem; text-align: center; }
-.msg-salvo { display: none; background: #e8f5e9; border: 1px solid var(--sage); color: var(--verde); border-radius: 8px; padding: 0.75rem 1rem; font-size: 0.82rem; margin-top: 1rem; text-align: center; }
+.tela-obrigado { display: none; text-align: center; padding: 4rem 2rem; }
+.tela-obrigado .icone { font-size: 3rem; margin-bottom: 1rem; }
+.tela-obrigado h2 { color: var(--verde); font-size: 1.3rem; font-weight: 500; margin-bottom: 0.75rem; }
+.tela-obrigado p { color: var(--texto-suave); font-size: 0.88rem; line-height: 1.7; }
 footer { text-align: center; padding: 1.5rem 1rem; font-size: 0.72rem; color: var(--texto-suave); border-top: 0.5px solid var(--borda); }
 </style>
 </head>
 <body>
+
 <header>
   <h1>POMS — Escala de Humor</h1>
   <p>Profile of Mood States · Cuiabá EC</p>
 </header>
 
-<div class="instrucoes">
-  Leia com atenção cada palavra. Escolha o número que melhor descreve como você está se sentindo <strong>agora</strong>. Não deixe nenhuma em branco.
-  <div class="escala-legenda">
-    <span>0 Nada</span><span>1 Um pouco</span><span>2 Mais ou menos</span><span>3 Bastante</span><span>4 Extremamente</span>
+<div id="tela-formulario">
+  <div class="instrucoes">
+    Leia com atenção cada palavra. Escolha o número que melhor descreve como você está se sentindo <strong>agora</strong>. Não deixe nenhuma em branco.
+    <div class="escala-legenda">
+      <span>0 Nada</span><span>1 Um pouco</span><span>2 Mais ou menos</span><span>3 Bastante</span><span>4 Extremamente</span>
+    </div>
   </div>
+
+  <div class="campo-nome">
+    <label>Nome do atleta</label>
+    <input type="text" id="nome" placeholder="Digite seu nome completo">
+    <label>Categoria</label>
+    <select id="categoria">
+      <option value="">Selecione</option>
+      <option value="Sub-15">Sub-15</option>
+      <option value="Sub-17">Sub-17</option>
+      <option value="Sub-20">Sub-20</option>
+    </select>
+    <label>Momento</label>
+    <select id="momento">
+      <option value="Pre-jogo">Pré-jogo</option>
+      <option value="Pos-jogo">Pós-jogo</option>
+      <option value="Treino">Treino</option>
+    </select>
+  </div>
+
+  <div id="formulario"></div>
+  <div class="aviso" id="aviso"></div>
+  <button class="btn-enviar" id="btn-enviar" onclick="enviar()">Enviar respostas</button>
 </div>
 
-<div class="campo-nome">
-  <label>Nome do atleta</label>
-  <input type="text" id="nome" placeholder="Digite seu nome completo">
-  <label>Categoria</label>
-  <select id="categoria">
-    <option value="">Selecione</option>
-    <option value="Sub-15">Sub-15</option>
-    <option value="Sub-17">Sub-17</option>
-    <option value="Sub-20">Sub-20</option>
-  </select>
-  <label>Momento</label>
-  <select id="momento">
-    <option value="Pre-jogo">Pré-jogo</option>
-    <option value="Pos-jogo">Pós-jogo</option>
-    <option value="Treino">Treino</option>
-  </select>
-</div>
-
-<div id="formulario"></div>
-<div class="aviso" id="aviso"></div>
-<button class="btn-calcular" id="btn-calcular" onclick="calcular()">Ver meu resultado</button>
-
-<div id="resultado">
-  <div class="resultado-header">
-    <h2 id="res-titulo">Resultado</h2>
-    <p id="res-subtitulo">POMS · Perfil de Estados de Humor</p>
-  </div>
-  <div class="resultado-corpo">
-    <div class="dimensoes-grid" id="dimensoes-cards"></div>
-    <div class="chart-wrapper">
-      <canvas id="grafico" role="img" aria-label="Gráfico radar do perfil de humor POMS">Perfil radar das seis dimensões.</canvas>
-    </div>
-    <div class="dmt-valor">
-      <div class="dmt-label">Distúrbio Total de Humor (DMT)</div>
-      <div class="dmt-numero" id="dmt-numero">—</div>
-      <div class="dmt-desc" id="dmt-desc">—</div>
-    </div>
-    <div class="interpretacao">
-      <div class="interpretacao-titulo">Leitura do perfil</div>
-      <p id="interpretacao-texto"></p>
-    </div>
-    <div class="msg-salvo" id="msg-salvo">Resultado salvo com sucesso.</div>
-  </div>
+<div class="tela-obrigado" id="tela-obrigado">
+  <div class="icone">✓</div>
+  <h2>Respostas enviadas!</h2>
+  <p>Obrigado por responder.<br>Suas respostas foram registradas com sucesso.</p>
 </div>
 
 <footer>Psicologia do Esporte · @erycapsicologa</footer>
@@ -161,16 +129,8 @@ const ITENS = [
   {n:64,nome:"Inseguro",dim:"tensao"},{n:65,nome:"Fadigado",dim:"fadiga"}
 ];
 
-const DIMS = {
-  tensao:{label:"Tensao",max:36},depressao:{label:"Depressao",max:60},
-  raiva:{label:"Raiva",max:48},vigor:{label:"Vigor",max:32},
-  fadiga:{label:"Fadiga",max:28},confusao:{label:"Confusao",max:24}
-};
-
-const DIMS_PT = {
-  tensao:"Tensão",depressao:"Depressão",raiva:"Raiva",
-  vigor:"Vigor",fadiga:"Fadiga",confusao:"Confusão"
-};
+const DIMS = {tensao:36,depressao:60,raiva:48,vigor:32,fadiga:28,confusao:24};
+const DIMS_PT = {tensao:"Tensão",depressao:"Depressão",raiva:"Raiva",vigor:"Vigor",fadiga:"Fadiga",confusao:"Confusão"};
 
 function renderForm() {
   const div = document.getElementById('formulario');
@@ -192,9 +152,7 @@ function renderForm() {
   div.innerHTML = html;
 }
 
-let graficoInstance = null;
-
-function calcular() {
+function enviar() {
   const nome = document.getElementById('nome').value.trim();
   const categoria = document.getElementById('categoria').value;
   const momento = document.getElementById('momento').value;
@@ -212,7 +170,7 @@ function calcular() {
     scores[item.dim] += parseInt(sel.value);
   });
 
-  if (incompleto) { aviso.textContent = 'Preencha todas as palavras antes de calcular.'; aviso.style.display = 'block'; return; }
+  if (incompleto) { aviso.textContent = 'Preencha todas as palavras antes de enviar.'; aviso.style.display = 'block'; return; }
 
   const dmt = scores.tensao + scores.depressao + scores.raiva + scores.fadiga + scores.confusao - scores.vigor;
   const agora = new Date();
@@ -223,74 +181,23 @@ function calcular() {
     timestamp: agora.toISOString()
   };
 
-  mostrarResultado(registro);
-  salvarFirebase(registro);
-}
+  const btn = document.getElementById('btn-enviar');
+  btn.disabled = true;
+  btn.textContent = 'Enviando...';
 
-function mostrarResultado(d) {
-  document.getElementById('res-titulo').textContent = `${d.nome} — ${d.data}`;
-  document.getElementById('res-subtitulo').textContent = `${d.categoria} · ${d.momento} · POMS`;
-
-  let cards = '';
-  Object.entries(DIMS).forEach(([key, info]) => {
-    const cls = key === 'vigor' ? 'vigor' : key === 'fadiga' ? 'alerta' : '';
-    cards += `<div class="dim-card ${cls}">
-      <div class="dim-card-nome">${DIMS_PT[key]}</div>
-      <div class="dim-card-valor">${d.scores[key]}</div>
-      <div class="dim-card-max">max ${info.max}</div>
-    </div>`;
-  });
-  document.getElementById('dimensoes-cards').innerHTML = cards;
-
-  document.getElementById('dmt-numero').textContent = d.dmt;
-  document.getElementById('dmt-desc').textContent = d.dmt < 0
-    ? 'Perfil favoravel — Vigor supera os estados negativos'
-    : d.dmt === 0 ? 'Humor equilibrado'
-    : 'Disturbio positivo — estados negativos predominam';
-
-  const v = d.scores.vigor;
-  let txt = '';
-  if (v >= 20 && d.dmt < 0) txt = 'O perfil apresenta alto vigor e estados negativos controlados — alinhado ao Perfil Iceberg de Morgan, associado a bom desempenho esportivo.';
-  else if (v < 10 && d.dmt > 20) txt = 'Vigor abaixo da media e disturbio total elevado. Estrategias de ativacao e regulacao emocional podem ser uteis antes da competicao.';
-  else if (d.scores.tensao >= 15) txt = 'Tensao elevada. Tecnicas de controle respiratorio e foco podem ajudar na preparacao pre-jogo.';
-  else if (d.scores.fadiga >= 15) txt = 'Fadiga em destaque. Verifique carga de treino recente e qualidade do sono.';
-  else txt = 'Perfil de humor dentro dos parametros esperados. Monitorar ao longo das proximas aplicacoes.';
-  document.getElementById('interpretacao-texto').textContent = txt;
-
-  const ctx = document.getElementById('grafico').getContext('2d');
-  if (graficoInstance) graficoInstance.destroy();
-  const labels = Object.keys(DIMS).map(k => DIMS_PT[k]);
-  const norm = Object.keys(DIMS).map(k => Math.round((d.scores[k] / DIMS[k].max) * 100));
-  graficoInstance = new Chart(ctx, {
-    type: 'radar',
-    data: { labels, datasets: [{
-      data: norm, backgroundColor: 'rgba(48,78,56,0.15)',
-      borderColor: '#304E38', borderWidth: 2,
-      pointBackgroundColor: '#C0A258', pointRadius: 5
-    }]},
-    options: { responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
-      scales: { r: { min:0, max:100, ticks:{display:false},
-        pointLabels:{font:{size:11},color:'#304E38'},
-        grid:{color:'rgba(48,78,56,0.12)'}, angleLines:{color:'rgba(48,78,56,0.12)'}
-      }}
-    }
-  });
-
-  document.getElementById('resultado').style.display = 'block';
-  document.getElementById('resultado').scrollIntoView({behavior:'smooth'});
-}
-
-function salvarFirebase(data) {
-  const btn = document.getElementById('btn-calcular');
-  btn.disabled = true; btn.textContent = 'Salvando...';
-  const chave = data.nome.toLowerCase().replace(/\s+/g,'_').replace(/[^a-z0-9_]/g,'');
-  db.ref('poms/' + chave).push(data)
+  const chave = nome.toLowerCase().replace(/\s+/g,'_').replace(/[^a-z0-9_]/g,'');
+  db.ref('poms/' + chave).push(registro)
     .then(() => {
-      document.getElementById('msg-salvo').style.display = 'block';
-      btn.textContent = 'Ver meu resultado'; btn.disabled = false;
+      document.getElementById('tela-formulario').style.display = 'none';
+      document.getElementById('tela-obrigado').style.display = 'block';
     })
-    .catch(err => { console.error(err); btn.textContent = 'Ver meu resultado'; btn.disabled = false; });
+    .catch(err => {
+      console.error(err);
+      aviso.textContent = 'Erro ao enviar. Tente novamente.';
+      aviso.style.display = 'block';
+      btn.disabled = false;
+      btn.textContent = 'Enviar respostas';
+    });
 }
 
 renderForm();

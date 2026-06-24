@@ -15,14 +15,29 @@
   --texto-suave: #555; --borda: rgba(48,78,56,0.15); --radius: 12px;
 }
 body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--creme); color: var(--texto); min-height: 100vh; }
-header { background: var(--verde); color: var(--creme); padding: 1.5rem 1.25rem 1.25rem; }
-header h1 { font-size: 1.2rem; font-weight: 500; letter-spacing: 0.04em; }
-header p { font-size: 0.78rem; color: var(--sage); margin-top: 4px; }
+
+/* TELA DE LOGIN */
+.tela-login { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 2rem; }
+.login-card { background: white; border-radius: var(--radius); border: 0.5px solid var(--borda); padding: 2rem 1.5rem; width: 100%; max-width: 320px; text-align: center; }
+.login-logo { color: var(--verde); font-size: 1.1rem; font-weight: 500; margin-bottom: 0.25rem; }
+.login-sub { font-size: 0.75rem; color: var(--sage); margin-bottom: 2rem; }
+.login-card label { display: block; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--sage); margin-bottom: 6px; text-align: left; }
+.login-card input { width: 100%; padding: 0.7rem 1rem; border: 1px solid var(--borda); border-radius: 8px; font-size: 0.95rem; outline: none; margin-bottom: 1rem; background: var(--creme); }
+.login-card input:focus { border-color: var(--sage); }
+.btn-login { width: 100%; padding: 0.875rem; background: var(--verde); color: var(--creme); border: none; border-radius: 8px; font-size: 0.95rem; font-weight: 500; cursor: pointer; transition: opacity 0.2s; }
+.btn-login:hover { opacity: 0.88; }
+.login-erro { display: none; color: #b03a2e; font-size: 0.8rem; margin-top: 0.5rem; }
+
+/* TELA PRINCIPAL */
+.tela-principal { display: none; }
+header { background: var(--verde); color: var(--creme); padding: 1.25rem 1.25rem 1rem; display: flex; align-items: center; justify-content: space-between; }
+header h1 { font-size: 1.1rem; font-weight: 500; }
+header p { font-size: 0.75rem; color: var(--sage); margin-top: 2px; }
+.btn-sair { background: transparent; border: 1px solid var(--sage); color: var(--sage); padding: 4px 12px; border-radius: 6px; font-size: 0.72rem; cursor: pointer; }
 .filtros { padding: 1rem; display: flex; gap: 8px; flex-wrap: wrap; }
-.filtros .grupo { flex: 1; min-width: 130px; }
+.filtros .grupo { flex: 1; min-width: 120px; }
 .filtros label { display: block; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--sage); margin-bottom: 4px; }
 .filtros select { width: 100%; padding: 0.55rem 0.75rem; border: 1px solid var(--borda); border-radius: 8px; background: white; font-size: 0.85rem; color: var(--texto); outline: none; }
-.filtros select:focus { border-color: var(--sage); }
 .secao { padding: 0 1rem 1.25rem; }
 .secao-titulo { font-size: 0.72rem; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--sage); margin-bottom: 0.65rem; }
 .card { background: white; border-radius: var(--radius); border: 0.5px solid var(--borda); padding: 1.25rem; margin-bottom: 1rem; }
@@ -50,44 +65,84 @@ footer { text-align: center; padding: 1.5rem 1rem; font-size: 0.72rem; color: va
 </style>
 </head>
 <body>
-<header>
-  <h1>POMS — Comparativo</h1>
-  <p>Acompanhamento longitudinal de estados de humor</p>
-</header>
 
-<div class="filtros">
-  <div class="grupo">
-    <label>Atleta</label>
-    <select id="filtro-atleta" onchange="renderizar()"><option value="">Todos</option></select>
-  </div>
-  <div class="grupo">
-    <label>Categoria</label>
-    <select id="filtro-cat" onchange="renderizar()">
-      <option value="">Todas</option>
-      <option value="Sub-15">Sub-15</option>
-      <option value="Sub-17">Sub-17</option>
-      <option value="Sub-20">Sub-20</option>
-    </select>
-  </div>
-  <div class="grupo">
-    <label>Dimensao</label>
-    <select id="filtro-dim" onchange="renderizar()">
-      <option value="dmt">DMT (total)</option>
-      <option value="tensao">Tensao</option>
-      <option value="depressao">Depressao</option>
-      <option value="raiva">Raiva</option>
-      <option value="vigor">Vigor</option>
-      <option value="fadiga">Fadiga</option>
-      <option value="confusao">Confusao</option>
-    </select>
+<!-- TELA LOGIN -->
+<div class="tela-login" id="tela-login">
+  <div class="login-card">
+    <div class="login-logo">POMS — Comparativo</div>
+    <div class="login-sub">Psicologia do Esporte · Cuiabá EC</div>
+    <label>Senha</label>
+    <input type="password" id="senha" placeholder="Digite a senha" onkeydown="if(event.key==='Enter') entrar()">
+    <button class="btn-login" onclick="entrar()">Entrar</button>
+    <div class="login-erro" id="login-erro">Senha incorreta.</div>
   </div>
 </div>
 
-<div id="conteudo"><div class="carregando">Carregando dados...</div></div>
+<!-- TELA PRINCIPAL -->
+<div class="tela-principal" id="tela-principal">
+  <header>
+    <div>
+      <h1>POMS — Comparativo</h1>
+      <p>Acompanhamento longitudinal de estados de humor</p>
+    </div>
+    <button class="btn-sair" onclick="sair()">Sair</button>
+  </header>
 
-<footer>Psicologia do Esporte · @erycapsicologa</footer>
+  <div class="filtros">
+    <div class="grupo">
+      <label>Atleta</label>
+      <select id="filtro-atleta" onchange="renderizar()"><option value="">Todos</option></select>
+    </div>
+    <div class="grupo">
+      <label>Categoria</label>
+      <select id="filtro-cat" onchange="renderizar()">
+        <option value="">Todas</option>
+        <option value="Sub-15">Sub-15</option>
+        <option value="Sub-17">Sub-17</option>
+        <option value="Sub-20">Sub-20</option>
+      </select>
+    </div>
+    <div class="grupo">
+      <label>Dimensão</label>
+      <select id="filtro-dim" onchange="renderizar()">
+        <option value="dmt">DMT (total)</option>
+        <option value="tensao">Tensão</option>
+        <option value="depressao">Depressão</option>
+        <option value="raiva">Raiva</option>
+        <option value="vigor">Vigor</option>
+        <option value="fadiga">Fadiga</option>
+        <option value="confusao">Confusão</option>
+      </select>
+    </div>
+  </div>
+
+  <div id="conteudo"><div class="carregando">Carregando dados...</div></div>
+
+  <footer>Psicologia do Esporte · @erycapsicologa</footer>
+</div>
 
 <script>
+const SENHA = 'eryca2025';
+
+function entrar() {
+  const s = document.getElementById('senha').value;
+  const erro = document.getElementById('login-erro');
+  if (s === SENHA) {
+    document.getElementById('tela-login').style.display = 'none';
+    document.getElementById('tela-principal').style.display = 'block';
+    iniciarFirebase();
+  } else {
+    erro.style.display = 'block';
+    document.getElementById('senha').value = '';
+  }
+}
+
+function sair() {
+  document.getElementById('tela-principal').style.display = 'none';
+  document.getElementById('tela-login').style.display = 'flex';
+  document.getElementById('senha').value = '';
+}
+
 const firebaseConfig = {
   apiKey: "AIzaSyBnDWZGibFps54OpFKHdq1VYZOFj6qJGqY",
   authDomain: "checkin---pre-jogo.firebaseapp.com",
@@ -97,29 +152,32 @@ const firebaseConfig = {
   messagingSenderId: "850423983845",
   appId: "1:850423983845:web:0613938dc4e5fb2973ae0c"
 };
-firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
 
-const DIMS_PT = {tensao:"Tensao",depressao:"Depressao",raiva:"Raiva",vigor:"Vigor",fadiga:"Fadiga",confusao:"Confusao"};
+const DIMS_PT = {tensao:"Tensão",depressao:"Depressão",raiva:"Raiva",vigor:"Vigor",fadiga:"Fadiga",confusao:"Confusão"};
 const DIMS_MAX = {tensao:36,depressao:60,raiva:48,vigor:32,fadiga:28,confusao:24};
 const CORES = ['#304E38','#C0A258','#8CA591','#a07040','#6e7a8a','#2d7a4f'];
 
 let todosOsDados = [];
 let g1 = null, g2 = null;
+let fbIniciado = false;
 
-db.ref('poms').on('value', snap => {
-  todosOsDados = [];
-  if (snap.exists()) {
-    snap.forEach(atletaSnap => {
-      atletaSnap.forEach(regSnap => {
-        todosOsDados.push(regSnap.val());
+function iniciarFirebase() {
+  if (fbIniciado) { renderizar(); return; }
+  firebase.initializeApp(firebaseConfig);
+  fbIniciado = true;
+  const db = firebase.database();
+  db.ref('poms').on('value', snap => {
+    todosOsDados = [];
+    if (snap.exists()) {
+      snap.forEach(atletaSnap => {
+        atletaSnap.forEach(regSnap => { todosOsDados.push(regSnap.val()); });
       });
-    });
-    todosOsDados.sort((a,b) => new Date(a.timestamp) - new Date(b.timestamp));
-  }
-  popularFiltros();
-  renderizar();
-});
+      todosOsDados.sort((a,b) => new Date(a.timestamp) - new Date(b.timestamp));
+    }
+    popularFiltros();
+    renderizar();
+  });
+}
 
 function popularFiltros() {
   const sel = document.getElementById('filtro-atleta');
@@ -141,7 +199,7 @@ function renderizar() {
   const el = document.getElementById('conteudo');
 
   if (dados.length === 0) {
-    el.innerHTML = `<div class="vazio"><strong>Nenhum dado encontrado</strong>Assim que os atletas responderem o questionario, os resultados aparecem aqui automaticamente.</div>`;
+    el.innerHTML = `<div class="vazio"><strong>Nenhum dado encontrado</strong>Assim que os atletas responderem o questionário, os resultados aparecem aqui automaticamente.</div>`;
     return;
   }
 
@@ -150,34 +208,34 @@ function renderizar() {
   const vigorMedio = Math.round(dados.reduce((a,d)=>a+d.scores.vigor,0)/total);
   const melhorDMT = Math.min(...dados.map(d=>d.dmt));
   const ultimas5 = dados.slice(-5);
-  const dimLabel = fDim === 'dmt' ? 'DMT (Disturbio Total)' : DIMS_PT[fDim];
+  const dimLabel = fDim === 'dmt' ? 'DMT (Distúrbio Total)' : DIMS_PT[fDim];
 
   el.innerHTML = `
     <div class="secao">
       <p class="secao-titulo">Resumo</p>
       <div class="metricas">
-        <div class="met d"><div class="met-label">Aplicacoes</div><div class="met-valor">${total}</div></div>
-        <div class="met"><div class="met-label">DMT medio</div><div class="met-valor">${dmtMedio}</div></div>
-        <div class="met"><div class="met-label">Vigor medio</div><div class="met-valor">${vigorMedio}</div></div>
+        <div class="met d"><div class="met-label">Aplicações</div><div class="met-valor">${total}</div></div>
+        <div class="met"><div class="met-label">DMT médio</div><div class="met-valor">${dmtMedio}</div></div>
+        <div class="met"><div class="met-label">Vigor médio</div><div class="met-valor">${vigorMedio}</div></div>
         <div class="met"><div class="met-label">Melhor DMT</div><div class="met-valor">${melhorDMT}</div></div>
       </div>
 
-      <p class="secao-titulo">Evolucao — ${dimLabel}</p>
+      <p class="secao-titulo">Evolução — ${dimLabel}</p>
       <div class="card">
         <div class="chart-wrapper">
-          <canvas id="g-evolucao" role="img" aria-label="Grafico de evolucao temporal">Evolucao dos resultados ao longo do tempo.</canvas>
+          <canvas id="g-evolucao" role="img" aria-label="Gráfico de evolução temporal">Evolução dos resultados ao longo do tempo.</canvas>
         </div>
       </div>
 
-      <p class="secao-titulo">Perfil radar — ultimas aplicacoes</p>
+      <p class="secao-titulo">Perfil radar — últimas aplicações</p>
       <div class="card">
         <div class="legenda" id="legenda-radar"></div>
         <div class="chart-wrapper">
-          <canvas id="g-radar" role="img" aria-label="Grafico radar POMS">Perfil radar das seis dimensoes.</canvas>
+          <canvas id="g-radar" role="img" aria-label="Gráfico radar POMS">Perfil radar das seis dimensões.</canvas>
         </div>
       </div>
 
-      <p class="secao-titulo">Historico completo</p>
+      <p class="secao-titulo">Histórico completo</p>
       <div class="card">
         <div class="tabela-wrap">
           <table>
@@ -217,8 +275,8 @@ function gerarRadar(dados) {
     const norm = Object.keys(DIMS_MAX).map(k => Math.round((d.scores[k]/DIMS_MAX[k])*100));
     return { label: d.nome.split(' ')[0]+' '+d.data, data: norm, borderColor: cor, backgroundColor: cor+'15', borderWidth: 1.5, pointRadius: 3, pointBackgroundColor: cor };
   });
-  const legHTML = datasets.map(ds => `<span class="leg-item"><span class="leg-dot" style="background:${ds.borderColor}"></span>${ds.label}</span>`).join('');
-  document.getElementById('legenda-radar').innerHTML = legHTML;
+  document.getElementById('legenda-radar').innerHTML = datasets.map(ds =>
+    `<span class="leg-item"><span class="leg-dot" style="background:${ds.borderColor}"></span>${ds.label}</span>`).join('');
   g2 = new Chart(ctx, {
     type: 'radar',
     data: { labels, datasets },
@@ -230,8 +288,7 @@ function gerarRadar(dados) {
 
 function gerarTabela(dados) {
   const tbody = document.getElementById('tbody');
-  const ordenados = [...dados].reverse();
-  tbody.innerHTML = ordenados.map(d => {
+  tbody.innerHTML = [...dados].reverse().map(d => {
     const s = d.scores;
     const cls = d.dmt < 0 ? 'neg' : d.dmt > 20 ? 'pos' : '';
     return `<tr><td>${d.data}</td><td>${d.nome}</td><td>${d.categoria||'—'}</td><td>${s.tensao}</td><td>${s.depressao}</td><td>${s.raiva}</td><td>${s.vigor}</td><td>${s.fadiga}</td><td>${s.confusao}</td><td class="${cls}">${d.dmt}</td></tr>`;
