@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>POMS – Escala de Humor</title>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --creme: #F8F4EC; --creme-escuro: #EEE8DA; --verde: #304E38;
+  --sage: #8CA591; --dourado: #C0A258; --texto: #1a1a1a;
+  --texto-suave: #555; --borda: rgba(48,78,56,0.15); --radius: 12px;
+}
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--creme); color: var(--texto); min-height: 100vh; }
+header { background: var(--verde); color: var(--creme); padding: 1.5rem 1.25rem 1.25rem; text-align: center; }
+header h1 { font-size: 1.25rem; font-weight: 500; letter-spacing: 0.04em; }
+header p { font-size: 0.78rem; color: var(--sage); margin-top: 4px; }
+.instrucoes { background: var(--creme-escuro); border-left: 3px solid var(--dourado); margin: 1.25rem 1rem 0; padding: 0.875rem 1rem; border-radius: 0 var(--radius) var(--radius) 0; font-size: 0.82rem; color: var(--texto-suave); line-height: 1.6; }
+.escala-legenda { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 0.6rem; }
+.escala-legenda span { background: var(--verde); color: var(--creme); font-size: 0.72rem; padding: 2px 8px; border-radius: 20px; }
+.campo-nome { margin: 1.25rem 1rem 0; }
+.campo-nome label { display: block; font-size: 0.78rem; font-weight: 500; color: var(--verde); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.06em; }
+.campo-nome input, .campo-nome select { width: 100%; padding: 0.65rem 1rem; border: 1px solid var(--borda); border-radius: var(--radius); background: white; font-size: 0.95rem; color: var(--texto); outline: none; margin-bottom: 0.75rem; }
+.campo-nome input:focus, .campo-nome select:focus { border-color: var(--sage); }
+.secao-titulo { margin: 1.5rem 1rem 0.5rem; font-size: 0.72rem; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--sage); }
+.item-bloco { margin: 0 1rem; border-radius: var(--radius); overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+.item { display: flex; align-items: center; justify-content: space-between; padding: 0.65rem 1rem; border-bottom: 0.5px solid var(--borda); background: white; }
+.item:last-of-type { border-bottom: none; }
+.item-nome { font-size: 0.88rem; color: var(--texto); width: 48%; }
+.opcoes { display: flex; gap: 6px; }
+.opcoes label { display: flex; flex-direction: column; align-items: center; gap: 3px; cursor: pointer; }
+.opcoes input[type="radio"] { display: none; }
+.opcoes .bolinha { width: 30px; height: 30px; border-radius: 50%; border: 1.5px solid var(--borda); background: var(--creme); display: flex; align-items: center; justify-content: center; font-size: 0.75rem; color: var(--texto-suave); transition: all 0.15s; }
+.opcoes input[type="radio"]:checked + .bolinha { background: var(--verde); color: var(--creme); border-color: var(--verde); font-weight: 500; }
+.btn-calcular { display: block; width: calc(100% - 2rem); margin: 1.5rem 1rem; padding: 1rem; background: var(--verde); color: var(--creme); border: none; border-radius: var(--radius); font-size: 0.95rem; font-weight: 500; letter-spacing: 0.04em; cursor: pointer; transition: opacity 0.2s; }
+.btn-calcular:hover { opacity: 0.88; }
+.btn-calcular:disabled { opacity: 0.5; cursor: not-allowed; }
+#resultado { display: none; padding: 0 1rem 2rem; }
+.resultado-header { background: var(--verde); color: var(--creme); padding: 1rem 1.25rem; border-radius: var(--radius) var(--radius) 0 0; margin-top: 1rem; }
+.resultado-header h2 { font-size: 1rem; font-weight: 500; }
+.resultado-header p { font-size: 0.78rem; color: var(--sage); margin-top: 2px; }
+.resultado-corpo { background: white; border-radius: 0 0 var(--radius) var(--radius); padding: 1.25rem; border: 0.5px solid var(--borda); }
+.dimensoes-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 1.25rem; }
+.dim-card { background: var(--creme); border-radius: 8px; padding: 0.65rem 0.875rem; border-left: 3px solid var(--sage); }
+.dim-card.vigor { border-left-color: var(--verde); }
+.dim-card.alerta { border-left-color: var(--dourado); }
+.dim-card-nome { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--texto-suave); }
+.dim-card-valor { font-size: 1.4rem; font-weight: 500; color: var(--verde); margin-top: 2px; }
+.dim-card-max { font-size: 0.65rem; color: var(--texto-suave); }
+.chart-wrapper { position: relative; height: 260px; width: 100%; margin: 1rem 0; }
+.interpretacao { background: var(--creme-escuro); border-radius: 8px; padding: 0.875rem 1rem; margin-top: 0.5rem; }
+.interpretacao-titulo { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--sage); margin-bottom: 6px; }
+.interpretacao p { font-size: 0.82rem; color: var(--texto-suave); line-height: 1.6; }
+.dmt-valor { text-align: center; padding: 0.875rem; margin-top: 1rem; background: var(--verde); border-radius: 8px; color: var(--creme); }
+.dmt-label { font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--sage); }
+.dmt-numero { font-size: 2rem; font-weight: 500; margin-top: 2px; }
+.dmt-desc { font-size: 0.75rem; color: var(--sage); margin-top: 2px; }
+.aviso { display: none; background: #fff3cd; border: 1px solid #d4a017; color: #7a5c00; border-radius: 8px; padding: 0.75rem 1rem; font-size: 0.82rem; margin: 0 1rem 1rem; text-align: center; }
+.msg-salvo { display: none; background: #e8f5e9; border: 1px solid var(--sage); color: var(--verde); border-radius: 8px; padding: 0.75rem 1rem; font-size: 0.82rem; margin-top: 1rem; text-align: center; }
+footer { text-align: center; padding: 1.5rem 1rem; font-size: 0.72rem; color: var(--texto-suave); border-top: 0.5px solid var(--borda); }
+</style>
+</head>
+<body>
+<header>
+  <h1>POMS — Escala de Humor</h1>
+  <p>Profile of Mood States · Cuiabá EC</p>
+</header>
+
+<div class="instrucoes">
+  Leia com atenção cada palavra. Escolha o número que melhor descreve como você está se sentindo <strong>agora</strong>. Não deixe nenhuma em branco.
+  <div class="escala-legenda">
+    <span>0 Nada</span><span>1 Um pouco</span><span>2 Mais ou menos</span><span>3 Bastante</span><span>4 Extremamente</span>
+  </div>
+</div>
+
+<div class="campo-nome">
+  <label>Nome do atleta</label>
+  <input type="text" id="nome" placeholder="Digite seu nome completo">
+  <label>Categoria</label>
+  <select id="categoria">
+    <option value="">Selecione</option>
+    <option value="Sub-15">Sub-15</option>
+    <option value="Sub-17">Sub-17</option>
+    <option value="Sub-20">Sub-20</option>
+  </select>
+  <label>Momento</label>
+  <select id="momento">
+    <option value="Pre-jogo">Pré-jogo</option>
+    <option value="Pos-jogo">Pós-jogo</option>
+    <option value="Treino">Treino</option>
+  </select>
+</div>
+
+<div id="formulario"></div>
+<div class="aviso" id="aviso"></div>
+<button class="btn-calcular" id="btn-calcular" onclick="calcular()">Ver meu resultado</button>
+
+<div id="resultado">
+  <div class="resultado-header">
+    <h2 id="res-titulo">Resultado</h2>
+    <p id="res-subtitulo">POMS · Perfil de Estados de Humor</p>
+  </div>
+  <div class="resultado-corpo">
+    <div class="dimensoes-grid" id="dimensoes-cards"></div>
+    <div class="chart-wrapper">
+      <canvas id="grafico" role="img" aria-label="Gráfico radar do perfil de humor POMS">Perfil radar das seis dimensões.</canvas>
+    </div>
+    <div class="dmt-valor">
+      <div class="dmt-label">Distúrbio Total de Humor (DMT)</div>
+      <div class="dmt-numero" id="dmt-numero">—</div>
+      <div class="dmt-desc" id="dmt-desc">—</div>
+    </div>
+    <div class="interpretacao">
+      <div class="interpretacao-titulo">Leitura do perfil</div>
+      <p id="interpretacao-texto"></p>
+    </div>
+    <div class="msg-salvo" id="msg-salvo">Resultado salvo com sucesso.</div>
+  </div>
+</div>
+
+<footer>Psicologia do Esporte · @erycapsicologa</footer>
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyBnDWZGibFps54OpFKHdq1VYZOFj6qJGqY",
+  authDomain: "checkin---pre-jogo.firebaseapp.com",
+  databaseURL: "https://checkin---pre-jogo-default-rtdb.firebaseio.com",
+  projectId: "checkin---pre-jogo",
+  storageBucket: "checkin---pre-jogo.firebasestorage.app",
+  messagingSenderId: "850423983845",
+  appId: "1:850423983845:web:0613938dc4e5fb2973ae0c"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+const ITENS = [
+  {n:1,nome:"Amistoso",dim:"vigor"},{n:2,nome:"Tenso",dim:"tensao"},{n:3,nome:"Bravo",dim:"raiva"},
+  {n:4,nome:"Esgotado",dim:"fadiga"},{n:5,nome:"Infeliz",dim:"depressao"},{n:6,nome:"Sereno",dim:"vigor"},
+  {n:7,nome:"Animado",dim:"vigor"},{n:8,nome:"Confuso",dim:"confusao"},{n:9,nome:"Arrependido",dim:"depressao"},
+  {n:10,nome:"Agitado",dim:"tensao"},{n:11,nome:"Apatico",dim:"depressao"},{n:12,nome:"Mau humorado",dim:"raiva"},
+  {n:13,nome:"Preocupado com os outros",dim:"vigor"},{n:14,nome:"Triste",dim:"depressao"},{n:15,nome:"Ativo",dim:"vigor"},
+  {n:16,nome:"A ponto de explodir",dim:"raiva"},{n:17,nome:"Resmungao",dim:"raiva"},{n:18,nome:"Abatido",dim:"depressao"},
+  {n:19,nome:"Energetico",dim:"vigor"},{n:20,nome:"Apavorado",dim:"tensao"},{n:21,nome:"Sem esperanca",dim:"depressao"},
+  {n:22,nome:"Relaxado",dim:"vigor"},{n:23,nome:"Desvalorizado",dim:"depressao"},{n:24,nome:"Rancoroso",dim:"raiva"},
+  {n:25,nome:"Simpatico",dim:"vigor"},{n:26,nome:"Intranquilo",dim:"tensao"},{n:27,nome:"Inquieto",dim:"tensao"},
+  {n:28,nome:"Incapaz de concentrar-se",dim:"confusao"},{n:29,nome:"Cansado",dim:"fadiga"},{n:30,nome:"Cooperador",dim:"vigor"},
+  {n:31,nome:"Irritado",dim:"raiva"},{n:32,nome:"Desanimado",dim:"depressao"},{n:33,nome:"Ressentido",dim:"raiva"},
+  {n:34,nome:"Nervoso",dim:"tensao"},{n:35,nome:"Sozinho",dim:"depressao"},{n:36,nome:"Miseravel",dim:"depressao"},
+  {n:37,nome:"Atordoado",dim:"confusao"},{n:38,nome:"Alegre",dim:"vigor"},{n:39,nome:"Amargurado",dim:"raiva"},
+  {n:40,nome:"Exausto",dim:"fadiga"},{n:41,nome:"Ansioso",dim:"tensao"},{n:42,nome:"Brigao",dim:"raiva"},
+  {n:43,nome:"Bondoso",dim:"vigor"},{n:44,nome:"Deprimido",dim:"depressao"},{n:45,nome:"Desesperado",dim:"depressao"},
+  {n:46,nome:"Preguicoso",dim:"fadiga"},{n:47,nome:"Rebelde",dim:"raiva"},{n:48,nome:"Abandonado",dim:"depressao"},
+  {n:49,nome:"Aborrecido",dim:"fadiga"},{n:50,nome:"Desorientado",dim:"confusao"},{n:51,nome:"Alerta",dim:"vigor"},
+  {n:52,nome:"Decepcionado",dim:"depressao"},{n:53,nome:"Furioso",dim:"raiva"},{n:54,nome:"Eficiente",dim:"vigor"},
+  {n:55,nome:"Confiante",dim:"vigor"},{n:56,nome:"Cheio de energia",dim:"vigor"},{n:57,nome:"Genioso",dim:"raiva"},
+  {n:58,nome:"Inutil",dim:"depressao"},{n:59,nome:"Esquecido",dim:"confusao"},{n:60,nome:"Sem preocupacao",dim:"vigor"},
+  {n:61,nome:"Aterrorizado",dim:"tensao"},{n:62,nome:"Culpado",dim:"depressao"},{n:63,nome:"Vigoroso",dim:"vigor"},
+  {n:64,nome:"Inseguro",dim:"tensao"},{n:65,nome:"Fadigado",dim:"fadiga"}
+];
+
+const DIMS = {
+  tensao:{label:"Tensao",max:36},depressao:{label:"Depressao",max:60},
+  raiva:{label:"Raiva",max:48},vigor:{label:"Vigor",max:32},
+  fadiga:{label:"Fadiga",max:28},confusao:{label:"Confusao",max:24}
+};
+
+const DIMS_PT = {
+  tensao:"Tensão",depressao:"Depressão",raiva:"Raiva",
+  vigor:"Vigor",fadiga:"Fadiga",confusao:"Confusão"
+};
+
+function renderForm() {
+  const div = document.getElementById('formulario');
+  let html = '';
+  let blocoAtual = '';
+  ITENS.forEach(item => {
+    if (item.dim !== blocoAtual) {
+      if (blocoAtual !== '') html += '</div>';
+      html += `<p class="secao-titulo">${DIMS_PT[item.dim]}</p><div class="item-bloco">`;
+      blocoAtual = item.dim;
+    }
+    html += `<div class="item"><div class="item-nome">${item.nome}</div><div class="opcoes">`;
+    for (let v = 0; v <= 4; v++) {
+      html += `<label><input type="radio" name="item${item.n}" value="${v}"><div class="bolinha">${v}</div></label>`;
+    }
+    html += `</div></div>`;
+  });
+  html += '</div>';
+  div.innerHTML = html;
+}
+
+let graficoInstance = null;
+
+function calcular() {
+  const nome = document.getElementById('nome').value.trim();
+  const categoria = document.getElementById('categoria').value;
+  const momento = document.getElementById('momento').value;
+  const aviso = document.getElementById('aviso');
+  aviso.style.display = 'none';
+
+  if (!nome) { aviso.textContent = 'Digite o nome do atleta.'; aviso.style.display = 'block'; return; }
+  if (!categoria) { aviso.textContent = 'Selecione a categoria.'; aviso.style.display = 'block'; return; }
+
+  const scores = {tensao:0,depressao:0,raiva:0,vigor:0,fadiga:0,confusao:0};
+  let incompleto = false;
+  ITENS.forEach(item => {
+    const sel = document.querySelector(`input[name="item${item.n}"]:checked`);
+    if (!sel) { incompleto = true; return; }
+    scores[item.dim] += parseInt(sel.value);
+  });
+
+  if (incompleto) { aviso.textContent = 'Preencha todas as palavras antes de calcular.'; aviso.style.display = 'block'; return; }
+
+  const dmt = scores.tensao + scores.depressao + scores.raiva + scores.fadiga + scores.confusao - scores.vigor;
+  const agora = new Date();
+  const registro = {
+    nome, categoria, momento, scores, dmt,
+    data: agora.toLocaleDateString('pt-BR'),
+    hora: agora.toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'}),
+    timestamp: agora.toISOString()
+  };
+
+  mostrarResultado(registro);
+  salvarFirebase(registro);
+}
+
+function mostrarResultado(d) {
+  document.getElementById('res-titulo').textContent = `${d.nome} — ${d.data}`;
+  document.getElementById('res-subtitulo').textContent = `${d.categoria} · ${d.momento} · POMS`;
+
+  let cards = '';
+  Object.entries(DIMS).forEach(([key, info]) => {
+    const cls = key === 'vigor' ? 'vigor' : key === 'fadiga' ? 'alerta' : '';
+    cards += `<div class="dim-card ${cls}">
+      <div class="dim-card-nome">${DIMS_PT[key]}</div>
+      <div class="dim-card-valor">${d.scores[key]}</div>
+      <div class="dim-card-max">max ${info.max}</div>
+    </div>`;
+  });
+  document.getElementById('dimensoes-cards').innerHTML = cards;
+
+  document.getElementById('dmt-numero').textContent = d.dmt;
+  document.getElementById('dmt-desc').textContent = d.dmt < 0
+    ? 'Perfil favoravel — Vigor supera os estados negativos'
+    : d.dmt === 0 ? 'Humor equilibrado'
+    : 'Disturbio positivo — estados negativos predominam';
+
+  const v = d.scores.vigor;
+  let txt = '';
+  if (v >= 20 && d.dmt < 0) txt = 'O perfil apresenta alto vigor e estados negativos controlados — alinhado ao Perfil Iceberg de Morgan, associado a bom desempenho esportivo.';
+  else if (v < 10 && d.dmt > 20) txt = 'Vigor abaixo da media e disturbio total elevado. Estrategias de ativacao e regulacao emocional podem ser uteis antes da competicao.';
+  else if (d.scores.tensao >= 15) txt = 'Tensao elevada. Tecnicas de controle respiratorio e foco podem ajudar na preparacao pre-jogo.';
+  else if (d.scores.fadiga >= 15) txt = 'Fadiga em destaque. Verifique carga de treino recente e qualidade do sono.';
+  else txt = 'Perfil de humor dentro dos parametros esperados. Monitorar ao longo das proximas aplicacoes.';
+  document.getElementById('interpretacao-texto').textContent = txt;
+
+  const ctx = document.getElementById('grafico').getContext('2d');
+  if (graficoInstance) graficoInstance.destroy();
+  const labels = Object.keys(DIMS).map(k => DIMS_PT[k]);
+  const norm = Object.keys(DIMS).map(k => Math.round((d.scores[k] / DIMS[k].max) * 100));
+  graficoInstance = new Chart(ctx, {
+    type: 'radar',
+    data: { labels, datasets: [{
+      data: norm, backgroundColor: 'rgba(48,78,56,0.15)',
+      borderColor: '#304E38', borderWidth: 2,
+      pointBackgroundColor: '#C0A258', pointRadius: 5
+    }]},
+    options: { responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: { r: { min:0, max:100, ticks:{display:false},
+        pointLabels:{font:{size:11},color:'#304E38'},
+        grid:{color:'rgba(48,78,56,0.12)'}, angleLines:{color:'rgba(48,78,56,0.12)'}
+      }}
+    }
+  });
+
+  document.getElementById('resultado').style.display = 'block';
+  document.getElementById('resultado').scrollIntoView({behavior:'smooth'});
+}
+
+function salvarFirebase(data) {
+  const btn = document.getElementById('btn-calcular');
+  btn.disabled = true; btn.textContent = 'Salvando...';
+  const chave = data.nome.toLowerCase().replace(/\s+/g,'_').replace(/[^a-z0-9_]/g,'');
+  db.ref('poms/' + chave).push(data)
+    .then(() => {
+      document.getElementById('msg-salvo').style.display = 'block';
+      btn.textContent = 'Ver meu resultado'; btn.disabled = false;
+    })
+    .catch(err => { console.error(err); btn.textContent = 'Ver meu resultado'; btn.disabled = false; });
+}
+
+renderForm();
+</script>
+</body>
+</html>

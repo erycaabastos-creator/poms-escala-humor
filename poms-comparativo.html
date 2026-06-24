@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>POMS – Comparativo</title>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --creme: #F8F4EC; --creme-escuro: #EEE8DA; --verde: #304E38;
+  --sage: #8CA591; --dourado: #C0A258; --texto: #1a1a1a;
+  --texto-suave: #555; --borda: rgba(48,78,56,0.15); --radius: 12px;
+}
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--creme); color: var(--texto); min-height: 100vh; }
+header { background: var(--verde); color: var(--creme); padding: 1.5rem 1.25rem 1.25rem; }
+header h1 { font-size: 1.2rem; font-weight: 500; letter-spacing: 0.04em; }
+header p { font-size: 0.78rem; color: var(--sage); margin-top: 4px; }
+.filtros { padding: 1rem; display: flex; gap: 8px; flex-wrap: wrap; }
+.filtros .grupo { flex: 1; min-width: 130px; }
+.filtros label { display: block; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--sage); margin-bottom: 4px; }
+.filtros select { width: 100%; padding: 0.55rem 0.75rem; border: 1px solid var(--borda); border-radius: 8px; background: white; font-size: 0.85rem; color: var(--texto); outline: none; }
+.filtros select:focus { border-color: var(--sage); }
+.secao { padding: 0 1rem 1.25rem; }
+.secao-titulo { font-size: 0.72rem; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--sage); margin-bottom: 0.65rem; }
+.card { background: white; border-radius: var(--radius); border: 0.5px solid var(--borda); padding: 1.25rem; margin-bottom: 1rem; }
+.metricas { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 1rem; }
+.met { background: var(--creme); border-radius: 8px; padding: 0.65rem 0.875rem; border-left: 3px solid var(--sage); }
+.met.d { border-left-color: var(--verde); }
+.met-label { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--texto-suave); }
+.met-valor { font-size: 1.3rem; font-weight: 500; color: var(--verde); margin-top: 2px; }
+.chart-wrapper { position: relative; width: 100%; height: 240px; }
+.legenda { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 0.75rem; font-size: 0.72rem; color: var(--texto-suave); }
+.leg-item { display: flex; align-items: center; gap: 5px; }
+.leg-dot { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+.tabela-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 0.78rem; min-width: 360px; }
+th { background: var(--verde); color: var(--creme); padding: 0.5rem 0.6rem; text-align: left; font-weight: 500; font-size: 0.7rem; }
+td { padding: 0.5rem 0.6rem; border-bottom: 0.5px solid var(--borda); }
+tr:last-child td { border-bottom: none; }
+tr:nth-child(even) td { background: var(--creme); }
+.neg { color: #2d7a4f; font-weight: 500; }
+.pos { color: #b03a2e; font-weight: 500; }
+.vazio { text-align: center; padding: 3rem 1rem; color: var(--texto-suave); font-size: 0.85rem; line-height: 1.8; }
+.vazio strong { display: block; color: var(--verde); font-size: 1rem; margin-bottom: 6px; }
+.carregando { text-align: center; padding: 2rem; color: var(--sage); font-size: 0.85rem; }
+footer { text-align: center; padding: 1.5rem 1rem; font-size: 0.72rem; color: var(--texto-suave); border-top: 0.5px solid var(--borda); }
+</style>
+</head>
+<body>
+<header>
+  <h1>POMS — Comparativo</h1>
+  <p>Acompanhamento longitudinal de estados de humor</p>
+</header>
+
+<div class="filtros">
+  <div class="grupo">
+    <label>Atleta</label>
+    <select id="filtro-atleta" onchange="renderizar()"><option value="">Todos</option></select>
+  </div>
+  <div class="grupo">
+    <label>Categoria</label>
+    <select id="filtro-cat" onchange="renderizar()">
+      <option value="">Todas</option>
+      <option value="Sub-15">Sub-15</option>
+      <option value="Sub-17">Sub-17</option>
+      <option value="Sub-20">Sub-20</option>
+    </select>
+  </div>
+  <div class="grupo">
+    <label>Dimensao</label>
+    <select id="filtro-dim" onchange="renderizar()">
+      <option value="dmt">DMT (total)</option>
+      <option value="tensao">Tensao</option>
+      <option value="depressao">Depressao</option>
+      <option value="raiva">Raiva</option>
+      <option value="vigor">Vigor</option>
+      <option value="fadiga">Fadiga</option>
+      <option value="confusao">Confusao</option>
+    </select>
+  </div>
+</div>
+
+<div id="conteudo"><div class="carregando">Carregando dados...</div></div>
+
+<footer>Psicologia do Esporte · @erycapsicologa</footer>
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyBnDWZGibFps54OpFKHdq1VYZOFj6qJGqY",
+  authDomain: "checkin---pre-jogo.firebaseapp.com",
+  databaseURL: "https://checkin---pre-jogo-default-rtdb.firebaseio.com",
+  projectId: "checkin---pre-jogo",
+  storageBucket: "checkin---pre-jogo.firebasestorage.app",
+  messagingSenderId: "850423983845",
+  appId: "1:850423983845:web:0613938dc4e5fb2973ae0c"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+const DIMS_PT = {tensao:"Tensao",depressao:"Depressao",raiva:"Raiva",vigor:"Vigor",fadiga:"Fadiga",confusao:"Confusao"};
+const DIMS_MAX = {tensao:36,depressao:60,raiva:48,vigor:32,fadiga:28,confusao:24};
+const CORES = ['#304E38','#C0A258','#8CA591','#a07040','#6e7a8a','#2d7a4f'];
+
+let todosOsDados = [];
+let g1 = null, g2 = null;
+
+db.ref('poms').on('value', snap => {
+  todosOsDados = [];
+  if (snap.exists()) {
+    snap.forEach(atletaSnap => {
+      atletaSnap.forEach(regSnap => {
+        todosOsDados.push(regSnap.val());
+      });
+    });
+    todosOsDados.sort((a,b) => new Date(a.timestamp) - new Date(b.timestamp));
+  }
+  popularFiltros();
+  renderizar();
+});
+
+function popularFiltros() {
+  const sel = document.getElementById('filtro-atleta');
+  const atual = sel.value;
+  const nomes = [...new Set(todosOsDados.map(d => d.nome))].sort();
+  sel.innerHTML = '<option value="">Todos</option>' + nomes.map(n =>
+    `<option value="${n}"${n===atual?' selected':''}>${n}</option>`).join('');
+}
+
+function renderizar() {
+  const fAtleta = document.getElementById('filtro-atleta').value;
+  const fCat = document.getElementById('filtro-cat').value;
+  const fDim = document.getElementById('filtro-dim').value;
+
+  let dados = todosOsDados;
+  if (fAtleta) dados = dados.filter(d => d.nome === fAtleta);
+  if (fCat) dados = dados.filter(d => d.categoria === fCat);
+
+  const el = document.getElementById('conteudo');
+
+  if (dados.length === 0) {
+    el.innerHTML = `<div class="vazio"><strong>Nenhum dado encontrado</strong>Assim que os atletas responderem o questionario, os resultados aparecem aqui automaticamente.</div>`;
+    return;
+  }
+
+  const total = dados.length;
+  const dmtMedio = Math.round(dados.reduce((a,d)=>a+d.dmt,0)/total);
+  const vigorMedio = Math.round(dados.reduce((a,d)=>a+d.scores.vigor,0)/total);
+  const melhorDMT = Math.min(...dados.map(d=>d.dmt));
+  const ultimas5 = dados.slice(-5);
+  const dimLabel = fDim === 'dmt' ? 'DMT (Disturbio Total)' : DIMS_PT[fDim];
+
+  el.innerHTML = `
+    <div class="secao">
+      <p class="secao-titulo">Resumo</p>
+      <div class="metricas">
+        <div class="met d"><div class="met-label">Aplicacoes</div><div class="met-valor">${total}</div></div>
+        <div class="met"><div class="met-label">DMT medio</div><div class="met-valor">${dmtMedio}</div></div>
+        <div class="met"><div class="met-label">Vigor medio</div><div class="met-valor">${vigorMedio}</div></div>
+        <div class="met"><div class="met-label">Melhor DMT</div><div class="met-valor">${melhorDMT}</div></div>
+      </div>
+
+      <p class="secao-titulo">Evolucao — ${dimLabel}</p>
+      <div class="card">
+        <div class="chart-wrapper">
+          <canvas id="g-evolucao" role="img" aria-label="Grafico de evolucao temporal">Evolucao dos resultados ao longo do tempo.</canvas>
+        </div>
+      </div>
+
+      <p class="secao-titulo">Perfil radar — ultimas aplicacoes</p>
+      <div class="card">
+        <div class="legenda" id="legenda-radar"></div>
+        <div class="chart-wrapper">
+          <canvas id="g-radar" role="img" aria-label="Grafico radar POMS">Perfil radar das seis dimensoes.</canvas>
+        </div>
+      </div>
+
+      <p class="secao-titulo">Historico completo</p>
+      <div class="card">
+        <div class="tabela-wrap">
+          <table>
+            <thead><tr><th>Data</th><th>Atleta</th><th>Cat</th><th>Ten</th><th>Dep</th><th>Rai</th><th>Vig</th><th>Fad</th><th>Con</th><th>DMT</th></tr></thead>
+            <tbody id="tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>`;
+
+  gerarEvolucao(dados, fDim);
+  gerarRadar(ultimas5);
+  gerarTabela(dados);
+}
+
+function gerarEvolucao(dados, dim) {
+  const ctx = document.getElementById('g-evolucao').getContext('2d');
+  if (g1) g1.destroy();
+  const labels = dados.map(d => d.data + (d.nome ? ' ' + d.nome.split(' ')[0] : ''));
+  const valores = dados.map(d => dim === 'dmt' ? d.dmt : d.scores[dim]);
+  const cor = dim === 'dmt' ? '#304E38' : '#C0A258';
+  g1 = new Chart(ctx, {
+    type: 'line',
+    data: { labels, datasets: [{ data: valores, borderColor: cor, backgroundColor: cor+'20', fill: true, tension: 0.3, pointBackgroundColor: '#C0A258', pointRadius: 4, borderWidth: 2 }]},
+    options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}},
+      scales:{ x:{ticks:{font:{size:9},color:'#555'},grid:{color:'rgba(0,0,0,0.05)'}}, y:{ticks:{font:{size:10},color:'#555'},grid:{color:'rgba(0,0,0,0.05)'}} }
+    }
+  });
+}
+
+function gerarRadar(dados) {
+  const ctx = document.getElementById('g-radar').getContext('2d');
+  if (g2) g2.destroy();
+  const labels = Object.keys(DIMS_PT).map(k => DIMS_PT[k]);
+  const datasets = dados.map((d,i) => {
+    const cor = CORES[i % CORES.length];
+    const norm = Object.keys(DIMS_MAX).map(k => Math.round((d.scores[k]/DIMS_MAX[k])*100));
+    return { label: d.nome.split(' ')[0]+' '+d.data, data: norm, borderColor: cor, backgroundColor: cor+'15', borderWidth: 1.5, pointRadius: 3, pointBackgroundColor: cor };
+  });
+  const legHTML = datasets.map(ds => `<span class="leg-item"><span class="leg-dot" style="background:${ds.borderColor}"></span>${ds.label}</span>`).join('');
+  document.getElementById('legenda-radar').innerHTML = legHTML;
+  g2 = new Chart(ctx, {
+    type: 'radar',
+    data: { labels, datasets },
+    options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}},
+      scales:{ r:{ min:0, max:100, ticks:{display:false}, pointLabels:{font:{size:10},color:'#304E38'}, grid:{color:'rgba(48,78,56,0.1)'}, angleLines:{color:'rgba(48,78,56,0.1)'} } }
+    }
+  });
+}
+
+function gerarTabela(dados) {
+  const tbody = document.getElementById('tbody');
+  const ordenados = [...dados].reverse();
+  tbody.innerHTML = ordenados.map(d => {
+    const s = d.scores;
+    const cls = d.dmt < 0 ? 'neg' : d.dmt > 20 ? 'pos' : '';
+    return `<tr><td>${d.data}</td><td>${d.nome}</td><td>${d.categoria||'—'}</td><td>${s.tensao}</td><td>${s.depressao}</td><td>${s.raiva}</td><td>${s.vigor}</td><td>${s.fadiga}</td><td>${s.confusao}</td><td class="${cls}">${d.dmt}</td></tr>`;
+  }).join('');
+}
+</script>
+</body>
+</html>
